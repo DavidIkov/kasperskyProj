@@ -5,33 +5,17 @@
 
 int main(int argc, char** argv) {
 
-    std::thread serverThread([]() {
-        CServerSocket serv;
-        serv.Open();
-        CClientSocket client; client.Connect("127.0.0.1", serv.GetLocalPort());
-        printf("dddd %i\n", (int)client.GetLocalPort());
-        std::this_thread::sleep_for(std::chrono::seconds(8));
-        printf("server sleeping done\n");
-        });
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::thread clientThread([]() {
-        CClientSocket socket;
-        {
-            std::printf("type the ip to connect, for example 96.7.128.198(example.com)\n");
-            std::string serverIP; serverIP = "104.19.222.79";//std::cin >> serverIP;
-            std::printf("type the port you want to connect to\n");
-            uint16_t serverPort; std::cin >> serverPort;
-            socket.Connect(serverIP, serverPort);
-        }
-        printf("connected!\n");
-        socket.SetReadBufferSize(128);
-        const char* sendbuf = "GET / HTTP/1.1\r\nHost: whatismyipaddress.com\r\nConnection: close\r\n\r\n";
-        socket.Send(sendbuf, strlen(sendbuf));
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-        printf("client sleeping done\n");
-        });
-    serverThread.join();
-    clientThread.join();
+    CClientSocket socket;
+    {
+        std::printf("type the ip to connect, for example 96.7.128.198(example.com)\n");
+        std::string serverIP; std::cin >> serverIP;
+        std::printf("type the port you want to connect to\n");
+        uint16_t serverPort; std::cin >> serverPort;
+        socket.Connect(serverIP, serverPort);
+    }
+    socket.SetReadBufferSize(128);
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    printf("client sleeping done\n");
     printf("finish\n");
     /*
     int sock = socket(AF_INET, SOCK_STREAM, 0);

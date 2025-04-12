@@ -18,6 +18,8 @@ struct SEndpoint{
     uint16_t Port = 0;
 };
 
+std::string GetIPFromDomen(std::string const& domen);
+
 //can connect to one endpoint and transfer data with it
 class CClientSocket {
     friend class CServerSocket;
@@ -44,10 +46,9 @@ public:
     CClientSocket& operator=(CClientSocket&&) = delete;
     virtual ~CClientSocket();
 protected:
-    inline virtual void OnConnect() {}
-    inline virtual void OnDisconnect() {}
-    virtual void OnRead(size_t bytesAmount);
-    inline virtual void OnReadError(int err) {}
+    inline virtual void OnConnect() { printf("Connected\n"); }
+    inline virtual void OnDisconnect() { printf("Disconnected\n"); }
+    inline virtual void OnRead(uint8_t* buf, size_t bytesAmount) {}
 public:
     //dosent take in account that socket may be created and not yet connected(in process of connecting)
     inline bool GetIsConnected() const noexcept { std::lock_guard LG(Mutex); return Handle != -1; }
@@ -69,7 +70,6 @@ public:
 class CServerSocket {
 private:
     int Handle = -1;
-    uint16_t LastLocalPort = 0;
 
 protected:
     mutable std::recursive_mutex Mutex;
@@ -90,7 +90,11 @@ public:
     virtual ~CServerSocket();
 protected:
     inline virtual void OnAccept(std::shared_ptr<CClientSocket> ptr) { printf("accepted\n"); }
-    inline virtual void OnAcceptError(int err) {}
+    inline virtual void OnOpen() {}
+    inline virtual void OnClose() {}
+    inline virtual std::shared_ptr<CClientSocket> ClientSocketFactory() {
+        return std::shared_ptr<CClientSocket>(new CClientSocket());
+    };
 public:
     inline bool GetIsOpened() const noexcept { std::lock_guard LG(Mutex); return Handle != -1; }
     uint16_t GetLocalPort() const;
