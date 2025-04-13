@@ -11,6 +11,7 @@
 class CClientSocket {
 private:
     int Handle = -1;
+    size_t BytesReserved = 0;
     std::vector<uint8_t> ReadBuffer;
 
 protected:
@@ -26,7 +27,8 @@ private:
     void _ReadThreadFunc();
 public:
 
-    CClientSocket();
+    CClientSocket() = delete;
+    CClientSocket(size_t readBuffSize);
     CClientSocket(int linuxSocketHandle, size_t readBuffSize);
     CClientSocket(CClientSocket const&) = delete;
     CClientSocket(CClientSocket&&) = delete;
@@ -36,7 +38,9 @@ public:
 protected:
     inline virtual void OnConnect() { printf("Connected\n"); }
     inline virtual void OnDisconnect() { printf("Disconnected\n"); }
-    inline virtual void OnRead(uint8_t* buf, size_t bytesAmount) {}
+    //returns amount of bytes that should be reserved, those bytes will be copyed from
+    //the end to beginning of buffer and will not be overwritten on next read
+    inline virtual size_t OnRead(size_t bytesReserved, uint8_t* buf, size_t newBytes) { return 0; }
 public:
     //dosent take in account that socket may be created and not yet connected(in process of connecting)
     inline bool GetIsConnected() const noexcept { std::lock_guard LG(Mutex); return Handle != -1; }
@@ -45,7 +49,7 @@ public:
     //todo send http request to api.ipify.org to get ip
     //SEndpoint GetLocalEndpoint() const;
 
-    inline void SetReadBufferSize(size_t size) { std::lock_guard LG(Mutex); ReadBuffer.resize(size, 0); }
+    inline size_t GetReadBufferSize() const noexcept { std::lock_guard LG(Mutex); return ReadBuffer.size(); }
 public:
     //if localPort is 0 OS will decide which port to use
     void Connect(std::string const& endpointIP, uint16_t endpointPort, uint16_t localPort = 0);

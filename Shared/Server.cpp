@@ -8,9 +8,6 @@ void CServer::OnAccept(std::shared_ptr<CClientSocket> ptr) {
     auto data = ptr->GetRemoteEndpoint();
     printf("client joined from %s:%i\n", data.IP.c_str(), data.Port);
 }
-void CServer::_ProcessClientInput(uint8_t* buf, size_t bytesAmount) {
-    printf("new input %.*s\n", (int)bytesAmount, buf);
-}
 CServer::CServer() :WorkThread([this]() {
     while(1) {
         std::unique_lock LG(Mutex);

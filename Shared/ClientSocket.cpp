@@ -3,6 +3,7 @@
 #include<netinet/in.h>
 #include<arpa/inet.h>
 #include<unistd.h>
+#include<cstring>
 #include<stdexcept>
 
 void CClientSocket::_CloseSocket() noexcept {
@@ -18,9 +19,12 @@ void CClientSocket::_ReadThreadFunc() {
         if (Handle == -1)
             CV.wait(LG, [&]()->bool {return StopReading || Handle != -1;});
         else {
-            if (ReadBuffer.size() == 0) fprintf(stderr, "read buffer is empty\n");
+            if (ReadBuffer.size() <= BytesReserved) {
+                fprintf(stderr, "available read buffer is empty\n");
+                BytesReserved = 0;
+            }
             //todo i feel that this is not thread safe
-            LG.unlock(); ssize_t bytes = read(Handle, ReadBuffer.data(), ReadBuffer.size()); LG.lock();
+            LG.unlock(); ssize_t bytes = read(Handle, ReadBuffer.data() + BytesReserved, ReadBuffer.size() - BytesReserved); LG.lock();
             if (bytes == -1) {
                 fprintf(stderr, "error while reading %i\n", errno);
                 Disconnect();
@@ -28,12 +32,14 @@ void CClientSocket::_ReadThreadFunc() {
             else if (bytes == 0) {
                 if(GetIsConnected()) Disconnect();
             }
-            else
-                OnRead(ReadBuffer.data(), bytes);
+            else {
+                BytesReserved = OnRead(BytesReserved, ReadBuffer.data(), bytes);
+                std::memcpy(ReadBuffer.data(), ReadBuffer.data() + (bytes - BytesReserved), BytesReserved);
+            }
         }
     }
 }
-CClientSocket::CClientSocket() :ReadingThread([this]() { _ReadThreadFunc(); }) {}
+CClientSocket::CClientSocket(size_t readBuffSize) :ReadBuffer(readBuffSize, 0), ReadingThread([this]() { _ReadThreadFunc(); }) {}
 CClientSocket::CClientSocket(int linuxSocketHandle, size_t readBuffSize)
     :Handle(linuxSocketHandle), ReadBuffer(readBuffSize, 0), ReadingThread([this]() {_ReadThreadFunc();}) {}
 CClientSocket::~CClientSocket() {

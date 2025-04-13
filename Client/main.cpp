@@ -6,8 +6,7 @@
 int main(int argc, char** argv) {
 
     try {
-        CClient socket;
-        socket.SetReadBufferSize(128);
+        CClient socket(128);
         {
             std::printf("type the ip to connect, for example 96.7.128.198(example.com)\n");
             std::string serverIP; std::cin >> serverIP;
@@ -15,16 +14,22 @@ int main(int argc, char** argv) {
             uint16_t serverPort; std::cin >> serverPort;
             socket.Connect(serverIP, serverPort);
         }
-        socket.Send("heyy", 5);
-        std::this_thread::sleep_for(std::chrono::seconds(10));
-        printf("end of client main\n");
+        printf("connected, type messages that you want to send to server, if you want to exit just push enter on empty line\n");
+        std::string input;
+        while (true) {
+            std::cin >> input;
+            if (input.size() == 0) break;
+            socket.Send(input.c_str(), input.size() + 1);
+        }
+        printf("exiting reading loop\n");
     }
     catch (SocketError& err) {
-        printf("catched socket exception: %s\n", err.what());
+        fprintf(stderr, "catched socket exception: %s\n", err.what());
     }
     catch (std::exception& err) {
-        printf("catched stl exception: %s\n", err.what());
-    }catch (...) {
-        printf("catched unknown exception\n");
+        fprintf(stderr, "catched stl exception: %s\n", err.what());
+    }
+    catch (...) {
+        fprintf(stderr, "catched unknown exception\n");
     }
 }
