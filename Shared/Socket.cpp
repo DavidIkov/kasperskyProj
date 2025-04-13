@@ -15,7 +15,7 @@ void CClientSocket::_CloseSocket() noexcept {
         Handle = -1;
     }
 }
-CClientSocket::CClientSocket() :ReadingThread([this]() {
+void CClientSocket::_ReadThreadFunc() {
     while (1) {
         std::unique_lock LG(Mutex);
         if (StopReading) return;
@@ -25,20 +25,21 @@ CClientSocket::CClientSocket() :ReadingThread([this]() {
             if (ReadBuffer.size() == 0) fprintf(stderr, "read buffer is empty\n");
             //todo i feel that this is not thread safe
             LG.unlock(); ssize_t bytes = read(Handle, ReadBuffer.data(), ReadBuffer.size()); LG.lock();
-            printf("read %i\n", (int)bytes);
             if (bytes == -1) {
                 fprintf(stderr, "error while reading %i\n", errno);
                 Disconnect();
             }
-            else if (bytes == 0)
-                Disconnect();
+            else if (bytes == 0) {
+                if(GetIsConnected()) Disconnect();
+            }
             else
                 OnRead(ReadBuffer.data(), bytes);
         }
     }
-    }) {
-
 }
+CClientSocket::CClientSocket() :ReadingThread([this]() { _ReadThreadFunc(); }) {}
+CClientSocket::CClientSocket(int linuxSocketHandle, size_t readBuffSize)
+    :Handle(linuxSocketHandle), ReadBuffer(readBuffSize, 0), ReadingThread([this]() {_ReadThreadFunc();}) {}
 CClientSocket::~CClientSocket() {
     std::unique_lock LG(Mutex);
     if (GetIsConnected()) Disconnect();
@@ -113,6 +114,9 @@ uint16_t CClientSocket::GetLocalPort() const {
 
 
 
+
+
+
 void CServerSocket::_CloseSocket() noexcept {
     if (Handle != -1) {
         shutdown(Handle, SHUT_RDWR);close(Handle); Handle = -1;
@@ -130,14 +134,14 @@ CServerSocket::CServerSocket() :AcceptingThread([this]() {
             LG.unlock(); int sock = accept(Handle, (sockaddr*)&localEndpoint, &_); LG.lock();
             if (StopAccepting) return;
 
-            if (sock == -1)
-                fprintf(stderr, "failed accepting client, %i\n", errno);
+            if (sock == -1) {
+                if (errno == EINVAL) {
+                    printf("stopped accepting clients\n"); return;
+                }
+                else fprintf(stderr, "failed accepting client, %i\n", errno);
+            }
             else {
-                auto ptr = ClientSocketFactory();
-                std::lock_guard LG(ptr->Mutex);
-                ptr->Handle = sock;
-                ptr->SetReadBufferSize(128);//todo add custom size
-                CV.notify_all();
+                auto ptr = ClientSocketFactory(sock, 128);//todo add custom size
                 OnAccept(ptr);
             }
         }

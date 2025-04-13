@@ -22,7 +22,7 @@ std::string GetIPFromDomen(std::string const& domen);
 
 //can connect to one endpoint and transfer data with it
 class CClientSocket {
-    friend class CServerSocket;
+    //friend class CServerSocket;
 private:
     int Handle = -1;
     std::vector<uint8_t> ReadBuffer;
@@ -37,9 +37,11 @@ private:
 
     //right now im just dropping connection and not doing gracefull disconnect
     void _CloseSocket() noexcept;
+    void _ReadThreadFunc();
 public:
 
     CClientSocket();
+    CClientSocket(int linuxSocketHandle, size_t readBuffSize);
     CClientSocket(CClientSocket const&) = delete;
     CClientSocket(CClientSocket&&) = delete;
     CClientSocket& operator=(CClientSocket const&) = delete;
@@ -92,8 +94,8 @@ protected:
     inline virtual void OnAccept(std::shared_ptr<CClientSocket> ptr) { printf("accepted\n"); }
     inline virtual void OnOpen() {}
     inline virtual void OnClose() {}
-    inline virtual std::shared_ptr<CClientSocket> ClientSocketFactory() {
-        return std::shared_ptr<CClientSocket>(new CClientSocket());
+    inline virtual std::shared_ptr<CClientSocket> ClientSocketFactory(int Handle, size_t bufSize) {
+        return std::shared_ptr<CClientSocket>(new CClientSocket(Handle, bufSize));
     };
 public:
     inline bool GetIsOpened() const noexcept { std::lock_guard LG(Mutex); return Handle != -1; }

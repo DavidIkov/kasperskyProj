@@ -4,8 +4,8 @@
 class CServer :public CServerSocket {
 protected:
     virtual void OnAccept(std::shared_ptr<CClientSocket> ptr) override;
-    inline virtual std::shared_ptr<CClientSocket> ClientSocketFactory() override {
-        return std::shared_ptr<CClientSocket>(new CClientSocketForServer(this));
+    inline virtual std::shared_ptr<CClientSocket> ClientSocketFactory(int handle, size_t bufSize) override {
+        return std::shared_ptr<CClientSocket>(new CClientSocketForServer(this, handle, bufSize));
     };
 private:
     friend class CClientSocketForServer;
@@ -25,7 +25,7 @@ private:
         }
     public:
         CClientSocketForServer() = delete;
-        CClientSocketForServer(CServer* serv) :Serv(serv) {}
+        CClientSocketForServer(CServer* serv, int handle, size_t bufSize) :CClientSocket(handle, bufSize), Serv(serv) {}
     };
     std::vector<std::shared_ptr<CClientSocket>> Clients;
 
