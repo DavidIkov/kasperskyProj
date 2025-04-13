@@ -19,7 +19,7 @@ size_t CProcessServer::CClientSocketForProcServer::OnRead(size_t bytesReserved, 
             
             std::string str(bytes, 0);
             //todo remove duplicate words
-            
+            ((CProcessServer*)Serv)->Send(buf + lastZero, bytes + 1);
 
             lastZero = i + 1;
         }
