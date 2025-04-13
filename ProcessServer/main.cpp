@@ -6,8 +6,18 @@
 int main(int argc, char** argv) {
 
     CProcessServer serv;
-    serv.Open();
+    {
+        printf("type the port where you want to open the processing server, if you want OS to decide just type 0\n");
+        unsigned port; std::cin >> port;
+        serv.Open(port);
+    }
     printf("opened server on %i port\n", (int)serv.GetLocalPort());
-    std::this_thread::sleep_for(std::chrono::seconds(20));
-    printf("closed\n");
+
+    printf("if you want to exit type exit\n");
+    std::string input;
+    while (true) {
+        std::cin >> input;
+        if (input == "exit") break;
+    }
+    printf("closing server\n");
 }
