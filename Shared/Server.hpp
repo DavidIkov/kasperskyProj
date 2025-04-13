@@ -1,5 +1,5 @@
 #pragma once
-#include"Socket.hpp"
+#include"ServerSocket.hpp"
 
 class CServer :public CServerSocket {
 protected:
