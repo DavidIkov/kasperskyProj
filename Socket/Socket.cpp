@@ -11,7 +11,7 @@ std::string GetIPFromDomen(std::string const& domen) {
 
 void CClientSocket::_CloseSocket() noexcept {
     if (Handle != -1) {
-        close(Handle);
+        shutdown(Handle, SHUT_RDWR); close(Handle);
         Handle = -1;
     }
 }
