@@ -2,11 +2,13 @@
 #include<stdio.h>
 #include<cstring>
 #include"Client.hpp"
+#include"httpparser/include/response.h"
+#include"httpparser/include/httpresponseparser.h"
 
 int main(int argc, char** argv) {
 
     try {
-        CClient socket(128);
+        CClient socket(1024);
         {
             std::printf("type the ip to connect, for example 127.0.0.1\n");
             std::string serverIP; std::cin >> serverIP;
@@ -20,7 +22,12 @@ int main(int argc, char** argv) {
         while (true) {
             getline(std::cin, input);
             if (input == "exit" || !socket.GetIsConnected()) break;
-            socket.Send(input.c_str(), input.size() + 1);
+            {
+                std::string httpStr = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " +
+                    std::to_string(input.size()) + "\r\n\r\n" + input;
+                unsigned len = httpStr.size(); socket.Send(&len, sizeof(unsigned));
+                socket.Send(httpStr.c_str(), httpStr.size());
+            }
         }
         printf("exiting reading loop\n");
     }
