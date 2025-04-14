@@ -5,7 +5,7 @@
 
 int main(int argc, char** argv) {
 
-    CProcessServer serv(128);
+    CProcessServer serv(1024);
     {
         std::printf("type the ip to connect, for example 127.0.0.1\n");
         std::string serverIP; std::cin >> serverIP;

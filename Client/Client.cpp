@@ -4,7 +4,6 @@
 #include"httpparser/include/httpresponseparser.h"
 #include"nlohmannjson/json.hpp"
 
-
 size_t CClient::OnRead(size_t bytesReserved, uint8_t* buf, size_t newBytes) {
     return StandartParser(bytesReserved, buf, newBytes, [this](uint8_t* buf, size_t len) {
         httpparser::Response response;

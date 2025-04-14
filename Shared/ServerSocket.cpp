@@ -30,7 +30,7 @@ CServerSocket::CServerSocket() :AcceptingThread([this]() {
                 else fprintf(stderr, "failed accepting client, %i\n", errno);
             }
             else {
-                auto ptr = ClientSocketFactory(sock, 128);//todo add custom size
+                auto ptr = ClientSocketFactory(sock, 1024);//todo add custom size
                 OnAccept(ptr);
             }
         }
