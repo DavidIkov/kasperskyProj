@@ -23,8 +23,9 @@ int main(int argc, char** argv) {
             getline(std::cin, input);
             if (input == "exit" || !socket.GetIsConnected()) break;
             {
+                std::string json = "{\"text\":\"" + input + "\"}";
                 std::string httpStr = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " +
-                    std::to_string(input.size()) + "\r\n\r\n" + input;
+                    std::to_string(json.size()) + "\r\n\r\n" + json;
                 unsigned len = httpStr.size(); socket.Send(&len, sizeof(unsigned));
                 socket.Send(httpStr.c_str(), httpStr.size());
             }

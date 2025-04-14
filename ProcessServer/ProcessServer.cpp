@@ -2,6 +2,7 @@
 #include<unordered_set>
 #include"httpparser/include/response.h"
 #include"httpparser/include/httpresponseparser.h"
+#include"nlohmannjson/json.hpp"
 
 static std::string RemoveDuplicateWords(std::string const& str) {
     std::string resStr; resStr.reserve(str.size());
@@ -17,7 +18,7 @@ static std::string RemoveDuplicateWords(std::string const& str) {
         }
         prevWordBeg = end + 1;
     }
-    if (resStr.size()) resStr[resStr.size() - 1] = 0;
+    resStr.resize(resStr.size() - 1);
     return resStr;
 }
 
@@ -29,26 +30,30 @@ size_t CProcessServer::CClientSocketForProcServer::OnRead(size_t bytesReserved, 
         httpparser::HttpResponseParser::ParseResult res =
             parser.parse(clientResp, (const char*)buf, (const char*)(buf + len));
         if (res == httpparser::HttpResponseParser::ParsingCompleted) {
+
+            nlohmann::json clientJson = nlohmann::json::parse(clientResp.content);
+            std::string clientInput = clientJson["text"];
+            
             unsigned errorsFound = 0;
-            for (unsigned i = 0;i < clientResp.content.size();i++)
-                if (clientResp.content[i] < 32 || clientResp.content[i]>126) {
-                    clientResp.content[i] = '?';
+            for (unsigned i = 0;i < clientInput.size();i++)
+                if (clientInput[i] < 32 || clientInput[i]>126) {
+                    clientInput[i] = '?';
                     errorsFound++;
                 }
             {
-                std::string json = std::to_string(clientResp.content.size());
+                std::string json = "{\"bytes\":\"" + std::to_string(clientInput.size()) + "\"}";
                 std::string response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
                     "Content-Length: " + std::to_string(json.size()) + "\r\n\r\n" + json;
                 unsigned num = response.size(); Send(&num, sizeof(unsigned));
                 Send(response.data(), response.size());
             }
 
-            printf("server received a message: \"%.*s\"", (int)clientResp.content.size(), clientResp.content.data());
+            printf("server received a message: \"%.*s\"", (int)clientInput.size(), clientInput.data());
             errorsFound ? printf(" and found %u errors\n", errorsFound) : printf(" with no errors\n");
 
-            std::string resStr = RemoveDuplicateWords(std::string(clientResp.content.begin(), clientResp.content.end()));
+            std::string resStr = RemoveDuplicateWords(std::string(clientInput.begin(), clientInput.end()));
             {
-                std::string json = resStr;
+                std::string json = "{\"text\":\"" + resStr + "\"}";
                 std::string response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
                     "Content-Length: " + std::to_string(json.size()) + "\r\n\r\n" + json;
                 unsigned num = response.size(); ((CProcessServer*)Serv)->Send(&num, sizeof(unsigned));
